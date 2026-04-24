@@ -1,0 +1,22 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/core",
+    "crates/cli",
+    "crates/gui",
+    "crates/embedded",
+]
+default-members = ["crates/gui"]
+
+# Standard release: speed-focused for GUI
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+# CLI release: prioritise binary size over raw throughput
+[profile.release-cli]
+inherits = "release"
+opt-level = "z"     # shrink over speed (use "s" to trade back some size for speed)
+panic = "abort"     # removes unwinding machinery (~10–20 kB)

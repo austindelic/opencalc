@@ -1,0 +1,13 @@
+[package]
+name = "gui"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "opencalc-gui"
+path = "src/main.rs"
+
+[dependencies]
+opencalc-core = { package = "core", path = "../core" }
+egui = "0.34.1"
+eframe = "0.34"
