@@ -14,9 +14,21 @@ opt-level = 3
 lto = true
 codegen-units = 1
 strip = true
+panic = "abort"   # required: LTO merges our bitcode with precompiled core; both must agree on panic strategy
 
 # CLI release: prioritise binary size over raw throughput
 [profile.release-cli]
 inherits = "release"
 opt-level = "z"     # shrink over speed (use "s" to trade back some size for speed)
 panic = "abort"     # removes unwinding machinery (~10–20 kB)
+
+# Embedded release: absolute minimum flash + RAM footprint
+[profile.release-embedded]
+inherits = "release"
+opt-level = "z"          # smallest code size
+panic = "abort"          # no unwinding tables
+lto = "fat"              # whole-program dead-code elimination
+codegen-units = 1        # single CGU required for fat LTO
+strip = "symbols"        # strip debug symbols from the ELF
+overflow-checks = false  # removes overflow check branches (saves flash + cycles)
+debug = false

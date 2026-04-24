@@ -1,0 +1,14 @@
+[build]
+target = "thumbv7m-none-eabi"
+
+[target.thumbv7m-none-eabi]
+linker = "rust-lld"
+# --gc-sections: discard every ELF section not reachable from the entry point
+# --icf=all:     merge identical code/data sections (Identical Code Folding)
+# --nmagic:      skip page-alignment padding (saves up to 4 kB per segment)
+rustflags = [
+    "-C", "link-arg=-Tlink.x",       # cortex-m-rt reset vector + section layout
+    "-C", "link-arg=--gc-sections",
+    "-C", "link-arg=--icf=all",
+    "-C", "link-arg=--nmagic",
+]
