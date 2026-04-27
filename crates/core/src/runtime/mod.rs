@@ -1,3 +1,3 @@
 pub mod env;
-pub mod matrix;
 pub mod eval;
+pub mod matrix;

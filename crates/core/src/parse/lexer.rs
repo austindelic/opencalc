@@ -1,7 +1,7 @@
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
 use crate::error::CalcError;
 use crate::syntax;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
@@ -31,7 +31,9 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(src: &'a str) -> Self { Lexer { src, pos: 0 } }
+    pub fn new(src: &'a str) -> Self {
+        Lexer { src, pos: 0 }
+    }
 
     fn peek(&self) -> Option<char> {
         self.src[self.pos..].chars().next()
@@ -51,15 +53,23 @@ impl<'a> Lexer<'a> {
 
     fn read_number(&mut self) -> Result<Token, CalcError> {
         let start = self.pos;
-        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) { self.advance(); }
+        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+            self.advance();
+        }
         if self.peek() == Some('.') {
             self.advance();
-            while matches!(self.peek(), Some(c) if c.is_ascii_digit()) { self.advance(); }
+            while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+                self.advance();
+            }
         }
         if matches!(self.peek(), Some('e') | Some('E')) {
             self.advance();
-            if matches!(self.peek(), Some('+') | Some('-')) { self.advance(); }
-            while matches!(self.peek(), Some(c) if c.is_ascii_digit()) { self.advance(); }
+            if matches!(self.peek(), Some('+') | Some('-')) {
+                self.advance();
+            }
+            while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
+                self.advance();
+            }
         }
         let s = &self.src[start..self.pos];
         // core::str::parse is available in no_std
@@ -83,19 +93,58 @@ impl<'a> Lexer<'a> {
             Some(c) => match c {
                 '0'..='9' | '.' => self.read_number(),
                 'a'..='z' | 'A'..='Z' | '_' => Ok(self.read_ident()),
-                c if c == syntax::OP_ADD => { self.advance(); Ok(Token::Plus) }
-                c if c == syntax::OP_SUB => { self.advance(); Ok(Token::Minus) }
-                c if c == syntax::OP_MUL || syntax::OP_MUL_ALT.contains(&c) => { self.advance(); Ok(Token::Star) }
-                c if c == syntax::OP_DIV || c == syntax::OP_DIV_ALT => { self.advance(); Ok(Token::Slash) }
-                c if c == syntax::OP_POW => { self.advance(); Ok(Token::Caret) }
-                c if c == syntax::OP_MOD => { self.advance(); Ok(Token::Percent) }
-                c if c == syntax::OP_FACTORIAL => { self.advance(); Ok(Token::Bang) }
-                c if c == syntax::OP_LPAREN => { self.advance(); Ok(Token::LParen) }
-                c if c == syntax::OP_RPAREN => { self.advance(); Ok(Token::RParen) }
-                c if c == syntax::OP_LBRACKET => { self.advance(); Ok(Token::LBracket) }
-                c if c == syntax::OP_RBRACKET => { self.advance(); Ok(Token::RBracket) }
-                c if c == syntax::OP_COMMA => { self.advance(); Ok(Token::Comma) }
-                c if c == syntax::OP_SEMICOLON => { self.advance(); Ok(Token::Semicolon) }
+                c if c == syntax::OP_ADD => {
+                    self.advance();
+                    Ok(Token::Plus)
+                }
+                c if c == syntax::OP_SUB => {
+                    self.advance();
+                    Ok(Token::Minus)
+                }
+                c if c == syntax::OP_MUL || syntax::OP_MUL_ALT.contains(&c) => {
+                    self.advance();
+                    Ok(Token::Star)
+                }
+                c if c == syntax::OP_DIV || c == syntax::OP_DIV_ALT => {
+                    self.advance();
+                    Ok(Token::Slash)
+                }
+                c if c == syntax::OP_POW => {
+                    self.advance();
+                    Ok(Token::Caret)
+                }
+                c if c == syntax::OP_MOD => {
+                    self.advance();
+                    Ok(Token::Percent)
+                }
+                c if c == syntax::OP_FACTORIAL => {
+                    self.advance();
+                    Ok(Token::Bang)
+                }
+                c if c == syntax::OP_LPAREN => {
+                    self.advance();
+                    Ok(Token::LParen)
+                }
+                c if c == syntax::OP_RPAREN => {
+                    self.advance();
+                    Ok(Token::RParen)
+                }
+                c if c == syntax::OP_LBRACKET => {
+                    self.advance();
+                    Ok(Token::LBracket)
+                }
+                c if c == syntax::OP_RBRACKET => {
+                    self.advance();
+                    Ok(Token::RBracket)
+                }
+                c if c == syntax::OP_COMMA => {
+                    self.advance();
+                    Ok(Token::Comma)
+                }
+                c if c == syntax::OP_SEMICOLON => {
+                    self.advance();
+                    Ok(Token::Semicolon)
+                }
                 c if c == syntax::OP_ASSIGN => {
                     self.advance();
                     if self.peek() == Some(syntax::OP_ASSIGN) {
@@ -105,8 +154,11 @@ impl<'a> Lexer<'a> {
                         Ok(Token::Eq)
                     }
                 }
-                c => Err(CalcError::LexError(format!("unexpected character: '{}'", c))),
-            }
+                c => Err(CalcError::LexError(format!(
+                    "unexpected character: '{}'",
+                    c
+                ))),
+            },
         }
     }
 
@@ -117,7 +169,9 @@ impl<'a> Lexer<'a> {
             let tok = lexer.next_token()?;
             let done = tok == Token::Eof;
             tokens.push(tok);
-            if done { break; }
+            if done {
+                break;
+            }
         }
         Ok(tokens)
     }
@@ -130,11 +184,17 @@ mod tests {
     #[test]
     fn basic_tokens() {
         let toks = Lexer::tokenize("1 + 2.5 * x").unwrap();
-        assert_eq!(toks, vec![
-            Token::Number(1.0), Token::Plus,
-            Token::Number(2.5), Token::Star,
-            Token::Ident("x".into()), Token::Eof,
-        ]);
+        assert_eq!(
+            toks,
+            vec![
+                Token::Number(1.0),
+                Token::Plus,
+                Token::Number(2.5),
+                Token::Star,
+                Token::Ident("x".into()),
+                Token::Eof,
+            ]
+        );
     }
 
     #[test]

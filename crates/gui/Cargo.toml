@@ -8,6 +8,6 @@ name = "gui"
 path = "src/main.rs"
 
 [dependencies]
-core = { path = "../core" }
+core = { path = "../core", features = ["scripting-std"] }
 egui = "0.34.1"
 eframe = "0.34"

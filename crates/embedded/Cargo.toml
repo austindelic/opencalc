@@ -3,9 +3,16 @@ name = "embedded"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+qemu-selftest = ["calc-core/scripting-no-std"]
+
 [dependencies]
 calc-core         = { path = "../core", package = "core" }
 embedded-alloc    = "0.6"
 cortex-m-rt       = "0.7"
 cortex-m-semihosting = "0.5"
 critical-section  = "1"
+
+[dev-dependencies]
+calc-core = { path = "../core", package = "core", features = ["scripting-std"] }

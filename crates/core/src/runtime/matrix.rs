@@ -1,14 +1,15 @@
+use crate::error::CalcError;
+use crate::expr::Expr;
 use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
-use crate::error::CalcError;
-use crate::expr::Expr;
 
 fn check_nonempty(m: &[Vec<Expr>], label: &str) -> Result<(usize, usize), CalcError> {
     if m.is_empty() || m[0].is_empty() {
-        Err(CalcError::InvalidArgument(
-            alloc::format!("{}: matrix must be non-empty", label)
-        ))
+        Err(CalcError::InvalidArgument(alloc::format!(
+            "{}: matrix must be non-empty",
+            label
+        )))
     } else {
         Ok((m.len(), m[0].len()))
     }
@@ -19,13 +20,19 @@ pub fn mat_add(a: &[Vec<Expr>], b: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcE
     let (rows_a, cols_a) = check_nonempty(a, "mat_add")?;
     let (rows_b, cols_b) = check_nonempty(b, "mat_add")?;
     if rows_a != rows_b || cols_a != cols_b {
-        return Err(CalcError::InvalidArgument("mat_add: dimension mismatch".into()));
+        return Err(CalcError::InvalidArgument(
+            "mat_add: dimension mismatch".into(),
+        ));
     }
-    Ok(a.iter().zip(b.iter()).map(|(ra, rb)| {
-        ra.iter().zip(rb.iter())
-            .map(|(ea, eb)| Expr::Add(vec![ea.clone(), eb.clone()]))
-            .collect()
-    }).collect())
+    Ok(a.iter()
+        .zip(b.iter())
+        .map(|(ra, rb)| {
+            ra.iter()
+                .zip(rb.iter())
+                .map(|(ea, eb)| Expr::Add(vec![ea.clone(), eb.clone()]))
+                .collect()
+        })
+        .collect())
 }
 
 /// Multiply two matrices symbolically.
@@ -33,7 +40,9 @@ pub fn mat_mul(a: &[Vec<Expr>], b: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcE
     let (rows_a, cols_a) = check_nonempty(a, "mat_mul")?;
     let (_, cols_b) = check_nonempty(b, "mat_mul")?;
     if cols_a != b.len() {
-        return Err(CalcError::InvalidArgument("mat_mul: inner dimensions must match".into()));
+        return Err(CalcError::InvalidArgument(
+            "mat_mul: inner dimensions must match".into(),
+        ));
     }
     let mut result = Vec::with_capacity(rows_a);
     for i in 0..rows_a {
@@ -52,7 +61,9 @@ pub fn mat_mul(a: &[Vec<Expr>], b: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcE
 /// Transpose a matrix.
 pub fn mat_transpose(m: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcError> {
     let (rows, cols) = check_nonempty(m, "mat_transpose")?;
-    Ok((0..cols).map(|j| (0..rows).map(|i| m[i][j].clone()).collect()).collect())
+    Ok((0..cols)
+        .map(|j| (0..rows).map(|i| m[i][j].clone()).collect())
+        .collect())
 }
 
 /// Sum of diagonal elements.
@@ -67,7 +78,9 @@ pub fn mat_trace(m: &[Vec<Expr>]) -> Result<Expr, CalcError> {
 pub fn mat_det(m: &[Vec<Expr>]) -> Result<Expr, CalcError> {
     let (rows, cols) = check_nonempty(m, "mat_det")?;
     if rows != cols {
-        return Err(CalcError::InvalidArgument("mat_det: requires square matrix".into()));
+        return Err(CalcError::InvalidArgument(
+            "mat_det: requires square matrix".into(),
+        ));
     }
     if m.iter().any(|r| r.len() != rows) {
         return Err(CalcError::InvalidArgument("mat_det: jagged matrix".into()));
@@ -86,19 +99,27 @@ fn det_recursive(m: &[Vec<Expr>]) -> Expr {
             Expr::Neg(Box::new(Expr::Mul(vec![m[0][1].clone(), m[1][0].clone()]))),
         ]);
     }
-    let terms: Vec<Expr> = (0..n).map(|col| {
-        let cofactor = det_recursive(&submatrix(m, 0, col));
-        let term = Expr::Mul(vec![m[0][col].clone(), cofactor]);
-        if col % 2 == 0 { term } else { Expr::Neg(Box::new(term)) }
-    }).collect();
+    let terms: Vec<Expr> = (0..n)
+        .map(|col| {
+            let cofactor = det_recursive(&submatrix(m, 0, col));
+            let term = Expr::Mul(vec![m[0][col].clone(), cofactor]);
+            if col % 2 == 0 {
+                term
+            } else {
+                Expr::Neg(Box::new(term))
+            }
+        })
+        .collect();
     Expr::Add(terms)
 }
 
 fn submatrix(m: &[Vec<Expr>], skip_row: usize, skip_col: usize) -> Vec<Vec<Expr>> {
-    m.iter().enumerate()
+    m.iter()
+        .enumerate()
         .filter(|(i, _)| *i != skip_row)
         .map(|(_, row)| {
-            row.iter().enumerate()
+            row.iter()
+                .enumerate()
                 .filter(|(j, _)| *j != skip_col)
                 .map(|(_, e)| e.clone())
                 .collect()
@@ -110,7 +131,9 @@ fn submatrix(m: &[Vec<Expr>], skip_row: usize, skip_col: usize) -> Vec<Vec<Expr>
 pub fn mat_inv(m: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcError> {
     let (rows, cols) = check_nonempty(m, "mat_inv")?;
     if rows != cols {
-        return Err(CalcError::InvalidArgument("mat_inv: requires square matrix".into()));
+        return Err(CalcError::InvalidArgument(
+            "mat_inv: requires square matrix".into(),
+        ));
     }
     if m.iter().any(|r| r.len() != rows) {
         return Err(CalcError::InvalidArgument("mat_inv: jagged matrix".into()));
@@ -118,13 +141,17 @@ pub fn mat_inv(m: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcError> {
     let n = rows;
 
     // Build augmented [M | I]
-    let mut aug: Vec<Vec<Expr>> = m.iter().enumerate().map(|(i, row)| {
-        let mut r = row.clone();
-        for j in 0..n {
-            r.push(if i == j { Expr::one() } else { Expr::zero() });
-        }
-        r
-    }).collect();
+    let mut aug: Vec<Vec<Expr>> = m
+        .iter()
+        .enumerate()
+        .map(|(i, row)| {
+            let mut r = row.clone();
+            for j in 0..n {
+                r.push(if i == j { Expr::one() } else { Expr::zero() });
+            }
+            r
+        })
+        .collect();
 
     for col in 0..n {
         let pivot_row = (col..n)
@@ -141,9 +168,13 @@ pub fn mat_inv(m: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcError> {
         }
 
         for row in 0..n {
-            if row == col { continue; }
+            if row == col {
+                continue;
+            }
             let factor = aug[row][col].clone();
-            if factor.is_zero() { continue; }
+            if factor.is_zero() {
+                continue;
+            }
             for j in 0..(2 * n) {
                 let sub = Expr::Mul(vec![factor.clone(), aug[col][j].clone()]);
                 let cur = aug[row][j].clone();
@@ -158,7 +189,9 @@ pub fn mat_inv(m: &[Vec<Expr>]) -> Result<Vec<Vec<Expr>>, CalcError> {
 /// 3D cross product.
 pub fn cross3(a: &[Expr], b: &[Expr]) -> Result<Vec<Expr>, CalcError> {
     if a.len() != 3 || b.len() != 3 {
-        return Err(CalcError::InvalidArgument("cross3: requires two 3D vectors".into()));
+        return Err(CalcError::InvalidArgument(
+            "cross3: requires two 3D vectors".into(),
+        ));
     }
     Ok(vec![
         Expr::Add(vec![
@@ -179,9 +212,13 @@ pub fn cross3(a: &[Expr], b: &[Expr]) -> Result<Vec<Expr>, CalcError> {
 /// Dot product of two equal-length vectors.
 pub fn dot(a: &[Expr], b: &[Expr]) -> Result<Expr, CalcError> {
     if a.is_empty() || a.len() != b.len() {
-        return Err(CalcError::InvalidArgument("dot: vectors must be non-empty and equal length".into()));
+        return Err(CalcError::InvalidArgument(
+            "dot: vectors must be non-empty and equal length".into(),
+        ));
     }
-    let terms: Vec<Expr> = a.iter().zip(b.iter())
+    let terms: Vec<Expr> = a
+        .iter()
+        .zip(b.iter())
         .map(|(ai, bi)| Expr::Mul(vec![ai.clone(), bi.clone()]))
         .collect();
     Ok(Expr::Add(terms))

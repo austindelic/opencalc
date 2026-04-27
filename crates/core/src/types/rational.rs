@@ -29,40 +29,77 @@ impl Rational {
         let n = n * sign;
         let d = d * sign;
         let g = gcd(n.abs(), d);
-        Rational { numer: n / g, denom: d / g }
+        Rational {
+            numer: n / g,
+            denom: d / g,
+        }
     }
 
-    pub fn zero() -> Self { Rational { numer: 0, denom: 1 } }
-    pub fn one() -> Self { Rational { numer: 1, denom: 1 } }
-    pub fn neg_one() -> Self { Rational { numer: -1, denom: 1 } }
+    pub fn zero() -> Self {
+        Rational { numer: 0, denom: 1 }
+    }
+    pub fn one() -> Self {
+        Rational { numer: 1, denom: 1 }
+    }
+    pub fn neg_one() -> Self {
+        Rational {
+            numer: -1,
+            denom: 1,
+        }
+    }
 
-    pub fn is_zero(self) -> bool { self.numer == 0 }
-    pub fn is_one(self) -> bool { self.numer == 1 && self.denom == 1 }
-    pub fn is_neg_one(self) -> bool { self.numer == -1 && self.denom == 1 }
-    pub fn is_integer(self) -> bool { self.denom == 1 }
-    pub fn is_positive(self) -> bool { self.numer > 0 }
-    pub fn is_negative(self) -> bool { self.numer < 0 }
+    pub fn is_zero(self) -> bool {
+        self.numer == 0
+    }
+    pub fn is_one(self) -> bool {
+        self.numer == 1 && self.denom == 1
+    }
+    pub fn is_neg_one(self) -> bool {
+        self.numer == -1 && self.denom == 1
+    }
+    pub fn is_integer(self) -> bool {
+        self.denom == 1
+    }
+    pub fn is_positive(self) -> bool {
+        self.numer > 0
+    }
+    pub fn is_negative(self) -> bool {
+        self.numer < 0
+    }
 
     pub fn to_f64(self) -> f64 {
         self.numer as f64 / self.denom as f64
     }
 
     pub fn abs(self) -> Self {
-        Rational { numer: self.numer.abs(), denom: self.denom }
+        Rational {
+            numer: self.numer.abs(),
+            denom: self.denom,
+        }
     }
 
     pub fn recip(self) -> Self {
         if self.numer < 0 {
-            Rational { numer: -self.denom, denom: -self.numer }
+            Rational {
+                numer: -self.denom,
+                denom: -self.numer,
+            }
         } else {
-            Rational { numer: self.denom, denom: self.numer }
+            Rational {
+                numer: self.denom,
+                denom: self.numer,
+            }
         }
     }
 
     /// Integer power with overflow checking. Returns None on overflow.
     pub fn checked_pow_int(self, n: i32) -> Option<Self> {
-        if n == 0 { return Some(Rational::one()); }
-        if n < 0 { return self.recip().checked_pow_int(-n); }
+        if n == 0 {
+            return Some(Rational::one());
+        }
+        if n < 0 {
+            return self.recip().checked_pow_int(-n);
+        }
         let mut result_n: i64 = 1;
         let mut result_d: i64 = 1;
         for _ in 0..n {
@@ -75,7 +112,12 @@ impl Rational {
 
 impl Neg for Rational {
     type Output = Self;
-    fn neg(self) -> Self { Rational { numer: -self.numer, denom: self.denom } }
+    fn neg(self) -> Self {
+        Rational {
+            numer: -self.numer,
+            denom: self.denom,
+        }
+    }
 }
 
 impl Add for Rational {
@@ -89,7 +131,9 @@ impl Add for Rational {
 
 impl Sub for Rational {
     type Output = Self;
-    fn sub(self, rhs: Self) -> Self { self + (-rhs) }
+    fn sub(self, rhs: Self) -> Self {
+        self + (-rhs)
+    }
 }
 
 impl Mul for Rational {
@@ -101,15 +145,24 @@ impl Mul for Rational {
 
 impl Div for Rational {
     type Output = Self;
-    fn div(self, rhs: Self) -> Self { self * rhs.recip() }
+    fn div(self, rhs: Self) -> Self {
+        self * rhs.recip()
+    }
 }
 
 impl From<i64> for Rational {
-    fn from(n: i64) -> Self { Rational { numer: n, denom: 1 } }
+    fn from(n: i64) -> Self {
+        Rational { numer: n, denom: 1 }
+    }
 }
 
 impl From<i32> for Rational {
-    fn from(n: i32) -> Self { Rational { numer: n as i64, denom: 1 } }
+    fn from(n: i32) -> Self {
+        Rational {
+            numer: n as i64,
+            denom: 1,
+        }
+    }
 }
 
 impl fmt::Display for Rational {
@@ -145,8 +198,17 @@ mod tests {
 
     #[test]
     fn pow() {
-        assert_eq!(Rational::new(2, 3).checked_pow_int(2), Some(Rational::new(4, 9)));
-        assert_eq!(Rational::new(2, 3).checked_pow_int(-1), Some(Rational::new(3, 2)));
-        assert_eq!(Rational::new(2, 1).checked_pow_int(0), Some(Rational::one()));
+        assert_eq!(
+            Rational::new(2, 3).checked_pow_int(2),
+            Some(Rational::new(4, 9))
+        );
+        assert_eq!(
+            Rational::new(2, 3).checked_pow_int(-1),
+            Some(Rational::new(3, 2))
+        );
+        assert_eq!(
+            Rational::new(2, 1).checked_pow_int(0),
+            Some(Rational::one())
+        );
     }
 }

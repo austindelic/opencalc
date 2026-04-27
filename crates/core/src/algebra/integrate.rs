@@ -1,9 +1,9 @@
-use alloc::boxed::Box;
-use alloc::vec;
-use alloc::vec::Vec;
 use crate::error::CalcError;
 use crate::expr::{BuiltinFn, Expr};
 use crate::subst::contains_var;
+use alloc::boxed::Box;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Attempt symbolic indefinite integration of `expr` w.r.t. `var`.
 /// Returns `None` if no pattern matches.
@@ -22,9 +22,10 @@ pub fn integrate(expr: &Expr, var: &str) -> Option<Expr> {
         Expr::Pow(base, exp) if matches!(base.as_ref(), Expr::Var(v) if v == var) => {
             if exp.as_ref() == &Expr::neg_one() {
                 // ∫1/x dx = ln|x|
-                return Some(Expr::Call(BuiltinFn::Ln, vec![
-                    Expr::Call(BuiltinFn::Abs, vec![Expr::Var(var.into())])
-                ]));
+                return Some(Expr::Call(
+                    BuiltinFn::Ln,
+                    vec![Expr::Call(BuiltinFn::Abs, vec![Expr::Var(var.into())])],
+                ));
             }
             match exp.as_ref() {
                 Expr::Rat(r) => {
@@ -40,9 +41,11 @@ pub fn integrate(expr: &Expr, var: &str) -> Option<Expr> {
 
         // ∫c·f dx = c·∫f dx   (scalar factor)
         Expr::Mul(factors) => {
-            let (consts, vars): (Vec<_>, Vec<_>) = factors.iter()
-                .partition(|f| !contains_var(f, var));
-            if consts.is_empty() { return None; }
+            let (consts, vars): (Vec<_>, Vec<_>) =
+                factors.iter().partition(|f| !contains_var(f, var));
+            if consts.is_empty() {
+                return None;
+            }
             let inner = if vars.len() == 1 {
                 vars[0].clone()
             } else {
@@ -60,32 +63,29 @@ pub fn integrate(expr: &Expr, var: &str) -> Option<Expr> {
         // ∫(f + g) dx = ∫f dx + ∫g dx
         Expr::Add(terms) => {
             let parts: Vec<Option<Expr>> = terms.iter().map(|t| integrate(t, var)).collect();
-            if parts.iter().any(|p| p.is_none()) { return None; }
+            if parts.iter().any(|p| p.is_none()) {
+                return None;
+            }
             Some(Expr::Add(parts.into_iter().map(|p| p.unwrap()).collect()))
         }
 
         // ∫sin(x) dx = -cos(x)
-        Expr::Call(BuiltinFn::Sin, args)
-            if args.len() == 1 && args[0] == Expr::Var(var.into()) =>
-        {
-            Some(Expr::Neg(Box::new(Expr::Call(BuiltinFn::Cos, vec![Expr::Var(var.into())]))))
+        Expr::Call(BuiltinFn::Sin, args) if args.len() == 1 && args[0] == Expr::Var(var.into()) => {
+            Some(Expr::Neg(Box::new(Expr::Call(
+                BuiltinFn::Cos,
+                vec![Expr::Var(var.into())],
+            ))))
         }
         // ∫cos(x) dx = sin(x)
-        Expr::Call(BuiltinFn::Cos, args)
-            if args.len() == 1 && args[0] == Expr::Var(var.into()) =>
-        {
+        Expr::Call(BuiltinFn::Cos, args) if args.len() == 1 && args[0] == Expr::Var(var.into()) => {
             Some(Expr::Call(BuiltinFn::Sin, vec![Expr::Var(var.into())]))
         }
         // ∫exp(x) dx = exp(x)
-        Expr::Call(BuiltinFn::Exp, args)
-            if args.len() == 1 && args[0] == Expr::Var(var.into()) =>
-        {
+        Expr::Call(BuiltinFn::Exp, args) if args.len() == 1 && args[0] == Expr::Var(var.into()) => {
             Some(Expr::Call(BuiltinFn::Exp, vec![Expr::Var(var.into())]))
         }
         // ∫ln(x) dx = x·ln(x) - x
-        Expr::Call(BuiltinFn::Ln, args)
-            if args.len() == 1 && args[0] == Expr::Var(var.into()) =>
-        {
+        Expr::Call(BuiltinFn::Ln, args) if args.len() == 1 && args[0] == Expr::Var(var.into()) => {
             let x = Expr::Var(var.into());
             Some(Expr::Add(vec![
                 Expr::Mul(vec![x.clone(), Expr::Call(BuiltinFn::Ln, vec![x.clone()])]),
@@ -109,13 +109,7 @@ pub fn integrate(expr: &Expr, var: &str) -> Option<Expr> {
 }
 
 /// Numerical integration via Simpson's rule (n must be even).
-pub fn nintegrate(
-    expr: &Expr,
-    var: &str,
-    a: f64,
-    b: f64,
-    n: usize,
-) -> Result<f64, CalcError> {
+pub fn nintegrate(expr: &Expr, var: &str, a: f64, b: f64, n: usize) -> Result<f64, CalcError> {
     use crate::eval::{eval, Context};
     use crate::subst::subst;
     let n = if n % 2 == 0 { n } else { n + 1 };
@@ -125,7 +119,13 @@ pub fn nintegrate(
         let x = a + i as f64 * h;
         let xe = Expr::Float(x);
         let fx = eval(&subst(expr, var, &xe), &Context::new())?;
-        let w = if i == 0 || i == n { 1.0 } else if i % 2 == 1 { 4.0 } else { 2.0 };
+        let w = if i == 0 || i == n {
+            1.0
+        } else if i % 2 == 1 {
+            4.0
+        } else {
+            2.0
+        };
         sum += w * fx;
     }
     Ok(sum * h / 3.0)

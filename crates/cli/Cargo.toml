@@ -8,4 +8,4 @@ name = "cli"
 path = "src/main.rs"
 
 [dependencies]
-core = { path = "../core" }
+core = { path = "../core", features = ["scripting-std"] }

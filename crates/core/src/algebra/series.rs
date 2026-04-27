@@ -1,9 +1,9 @@
-use alloc::vec;
-use alloc::vec::Vec;
+use crate::diff::diff;
 use crate::error::CalcError;
 use crate::expr::Expr;
 use crate::subst::subst;
-use crate::diff::diff;
+use alloc::vec;
+use alloc::vec::Vec;
 
 /// Compute Taylor series of `expr` around `point` to `order` terms.
 /// Returns a polynomial in `var`.
@@ -13,7 +13,9 @@ pub fn taylor(expr: &Expr, var: &str, point: &Expr, order: usize) -> Result<Expr
     let mut factorial: u64 = 1;
 
     for n in 0..=order {
-        if n > 0 { factorial *= n as u64; }
+        if n > 0 {
+            factorial *= n as u64;
+        }
 
         // Evaluate deriv at point
         let val_at_point = subst(&deriv, var, point);
@@ -22,10 +24,7 @@ pub fn taylor(expr: &Expr, var: &str, point: &Expr, order: usize) -> Result<Expr
         let coeff = if factorial == 1 {
             val_at_point
         } else {
-            Expr::Mul(vec![
-                Expr::rational(1, factorial as i64),
-                val_at_point,
-            ])
+            Expr::Mul(vec![Expr::rational(1, factorial as i64), val_at_point])
         };
 
         let term = if n == 0 {
@@ -33,7 +32,10 @@ pub fn taylor(expr: &Expr, var: &str, point: &Expr, order: usize) -> Result<Expr
         } else if n == 1 {
             Expr::Mul(vec![
                 coeff,
-                Expr::Add(vec![Expr::Var(var.into()), Expr::Neg(alloc::boxed::Box::new(point.clone()))]),
+                Expr::Add(vec![
+                    Expr::Var(var.into()),
+                    Expr::Neg(alloc::boxed::Box::new(point.clone())),
+                ]),
             ])
         } else {
             Expr::Mul(vec![

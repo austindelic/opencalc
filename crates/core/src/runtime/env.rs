@@ -1,7 +1,7 @@
+use crate::expr::Expr;
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use crate::expr::Expr;
 
 #[derive(Clone, Debug)]
 pub struct UserFn {
@@ -12,12 +12,15 @@ pub struct UserFn {
 #[derive(Clone, Debug)]
 pub struct Env {
     pub vars: BTreeMap<String, Expr>,
-    pub fns:  BTreeMap<String, UserFn>,
+    pub fns: BTreeMap<String, UserFn>,
 }
 
 impl Env {
     pub fn new() -> Self {
-        Env { vars: BTreeMap::new(), fns: BTreeMap::new() }
+        Env {
+            vars: BTreeMap::new(),
+            fns: BTreeMap::new(),
+        }
     }
 
     pub fn set_var(&mut self, name: &str, val: Expr) {
@@ -38,5 +41,7 @@ impl Env {
 }
 
 impl Default for Env {
-    fn default() -> Self { Env::new() }
+    fn default() -> Self {
+        Env::new()
+    }
 }
