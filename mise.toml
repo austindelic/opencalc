@@ -1,0 +1,29 @@
+[tasks.default]
+depends = ["embedded-flash"]
+
+[tasks.embedded-build]
+description = "Build embedded (debug)"
+dir = "crates/embedded"
+run = "cargo build"
+
+[tasks.embedded-release]
+description = "Build embedded (release-embedded profile)"
+dir = "crates/embedded"
+run = "cargo build --profile release-embedded"
+
+[tasks.embedded-flash]
+description = "Build and flash via picotool"
+depends = ["embedded-build"]
+dir = "crates/embedded"
+run = "cargo run"
+
+[tasks.embedded-flash-release]
+description = "Flash release build"
+depends = ["embedded-release"]
+dir = "crates/embedded"
+run = "cargo run --profile release-embedded"
+
+[tasks.embedded-size]
+description = "Print section sizes of the debug ELF"
+dir = "crates/embedded"
+run = "cargo build && cargo size --bin embedded"
