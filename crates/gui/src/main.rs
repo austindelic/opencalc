@@ -1,6 +1,6 @@
 use core::{
-    eval_env, parse_statement, simplify_with_env, Env, Expr, ScriptRuntime, ScriptScope,
-    Statement, UserFn,
+    eval_env, parse_statement, simplify_with_env, Env, Expr, ScriptRuntime, ScriptScope, Statement,
+    UserFn,
 };
 use eframe::egui;
 use egui::{Color32, RichText, Vec2};
@@ -17,10 +17,20 @@ fn main() -> eframe::Result {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum PanelTab { Workspace, Script, Palette }
+enum PanelTab {
+    Workspace,
+    Script,
+    Palette,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum EntryKind { Eval, Assignment, Function, Script, Error }
+enum EntryKind {
+    Eval,
+    Assignment,
+    Function,
+    Script,
+    Error,
+}
 
 struct HistoryEntry {
     input: String,
@@ -46,16 +56,16 @@ struct App {
 }
 
 // Rust-language color palette
-const C_BG: Color32    = Color32::from_rgb(18, 15, 14);   // near-black warm brown
-const C_DISP: Color32  = Color32::from_rgb(10, 8, 7);     // almost black
-const C_NUM: Color32   = Color32::from_rgb(46, 38, 36);   // dark warm grey
-const C_OP: Color32    = Color32::from_rgb(206, 65, 43);  // rust #CE412B
-const C_FN: Color32    = Color32::from_rgb(72, 50, 46);   // dark rust tint
-const C_SPEC: Color32  = Color32::from_rgb(110, 90, 85);  // warm mid-grey
-const C_EXPR: Color32  = Color32::from_rgb(158, 126, 116);// warm muted text
-const C_RES: Color32   = Color32::from_rgb(245, 240, 238);// warm white
-const C_PANEL: Color32 = Color32::from_rgb(22, 18, 17);   // panel background
-const C_SEP: Color32   = Color32::from_rgb(55, 42, 38);   // separator line
+const C_BG: Color32 = Color32::from_rgb(18, 15, 14); // near-black warm brown
+const C_DISP: Color32 = Color32::from_rgb(10, 8, 7); // almost black
+const C_NUM: Color32 = Color32::from_rgb(46, 38, 36); // dark warm grey
+const C_OP: Color32 = Color32::from_rgb(206, 65, 43); // rust #CE412B
+const C_FN: Color32 = Color32::from_rgb(72, 50, 46); // dark rust tint
+const C_SPEC: Color32 = Color32::from_rgb(110, 90, 85); // warm mid-grey
+const C_EXPR: Color32 = Color32::from_rgb(158, 126, 116); // warm muted text
+const C_RES: Color32 = Color32::from_rgb(245, 240, 238); // warm white
+const C_PANEL: Color32 = Color32::from_rgb(22, 18, 17); // panel background
+const C_SEP: Color32 = Color32::from_rgb(55, 42, 38); // separator line
 
 impl App {
     fn new() -> Self {
@@ -86,11 +96,11 @@ impl App {
         }
         let entry = self.evaluate_statement(&raw);
         self.status = match entry.kind {
-            EntryKind::Eval       => String::from("Evaluated"),
+            EntryKind::Eval => String::from("Evaluated"),
             EntryKind::Assignment => String::from("Variable saved"),
-            EntryKind::Function   => String::from("Function saved"),
-            EntryKind::Script     => String::from("Script ran"),
-            EntryKind::Error      => String::from("Fix expression and try again"),
+            EntryKind::Function => String::from("Function saved"),
+            EntryKind::Script => String::from("Script ran"),
+            EntryKind::Error => String::from("Fix expression and try again"),
         };
         self.result = entry.output.clone();
         self.history.push(entry);
@@ -182,7 +192,11 @@ impl App {
         }
         let entry = match self.scripts.run_with_scope(&source, &mut self.script_scope) {
             Ok(output) => {
-                let result = if output.is_empty() { String::from("(unit)") } else { output };
+                let result = if output.is_empty() {
+                    String::from("(unit)")
+                } else {
+                    output
+                };
                 self.last_answer = Some(result.clone());
                 self.result = result.clone();
                 HistoryEntry {
@@ -285,7 +299,10 @@ impl App {
         egui::Panel::bottom("status_bar")
             .resizable(false)
             .frame(egui::Frame::NONE.inner_margin(egui::Margin {
-                left: 10, right: 10, top: 6, bottom: 6,
+                left: 10,
+                right: 10,
+                top: 6,
+                bottom: 6,
             }))
             .show_inside(ui, |ui| {
                 ui.label(RichText::new(&self.status).size(11.0).color(C_EXPR));
@@ -293,7 +310,10 @@ impl App {
 
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.inner_margin(egui::Margin {
-                left: 0, right: 10, top: 0, bottom: 0,
+                left: 0,
+                right: 10,
+                top: 0,
+                bottom: 0,
             }))
             .show_inside(ui, |ui| self.calc_area(ui));
     }
@@ -339,20 +359,28 @@ impl App {
                 ui.add_space(12.0);
 
                 let pf = if self.show_panel { C_OP } else { C_FN };
-                if ui.add(
-                    egui::Button::new(RichText::new("Tools").size(11.0).color(C_RES))
-                        .fill(pf).min_size(Vec2::new(44.0, 26.0)),
-                ).clicked() {
+                if ui
+                    .add(
+                        egui::Button::new(RichText::new("Tools").size(11.0).color(C_RES))
+                            .fill(pf)
+                            .min_size(Vec2::new(44.0, 26.0)),
+                    )
+                    .clicked()
+                {
                     self.show_panel = !self.show_panel;
                 }
 
                 ui.add_space(4.0);
 
                 let hf = if self.show_history { C_OP } else { C_FN };
-                if ui.add(
-                    egui::Button::new(RichText::new("Hist").size(11.0).color(C_RES))
-                        .fill(hf).min_size(Vec2::new(38.0, 26.0)),
-                ).clicked() {
+                if ui
+                    .add(
+                        egui::Button::new(RichText::new("Hist").size(11.0).color(C_RES))
+                            .fill(hf)
+                            .min_size(Vec2::new(38.0, 26.0)),
+                    )
+                    .clicked()
+                {
                     self.show_history = !self.show_history;
                 }
             });
@@ -370,16 +398,20 @@ impl App {
                 ui.allocate_space(Vec2::new(inner_w, 0.0));
                 ui.set_min_height(108.0);
 
-                let expr_size: f32 = if self.input.len() <= 28 { 17.0 }
-                    else if self.input.len() <= 45 { 13.0 }
-                    else { 10.5 };
+                let expr_size: f32 = if self.input.len() <= 28 {
+                    17.0
+                } else if self.input.len() <= 45 {
+                    13.0
+                } else {
+                    10.5
+                };
 
                 let v = &mut ui.style_mut().visuals;
                 v.extreme_bg_color = Color32::TRANSPARENT;
                 v.widgets.inactive.bg_stroke = egui::Stroke::NONE;
-                v.widgets.hovered.bg_stroke  = egui::Stroke::NONE;
-                v.widgets.active.bg_stroke   = egui::Stroke::NONE;
-                v.selection.stroke           = egui::Stroke::NONE;
+                v.widgets.hovered.bg_stroke = egui::Stroke::NONE;
+                v.widgets.active.bg_stroke = egui::Stroke::NONE;
+                v.selection.stroke = egui::Stroke::NONE;
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
                     let resp = ui.add(
@@ -397,15 +429,27 @@ impl App {
 
                 ui.add_space(6.0);
 
-                let res_size: f32 = if self.result.len() <= 10 { 44.0 }
-                    else if self.result.len() <= 18 { 32.0 }
-                    else if self.result.len() <= 28 { 22.0 }
-                    else { 15.0 };
+                let res_size: f32 = if self.result.len() <= 10 {
+                    44.0
+                } else if self.result.len() <= 18 {
+                    32.0
+                } else if self.result.len() <= 28 {
+                    22.0
+                } else {
+                    15.0
+                };
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
-                    ui.label(RichText::new(&self.result).color(C_RES).size(res_size).strong());
+                    ui.label(
+                        RichText::new(&self.result)
+                            .color(C_RES)
+                            .size(res_size)
+                            .strong(),
+                    );
                 });
             });
-        if do_eval { self.evaluate(); }
+        if do_eval {
+            self.evaluate();
+        }
     }
 
     fn history_strip(&mut self, ui: &mut egui::Ui) {
@@ -429,8 +473,8 @@ impl App {
                             let mut use_input = false;
                             let mut use_output = false;
                             history_card(ui, &self.history[index], |action| match action {
-                                HistoryAction::Rerun     => rerun = true,
-                                HistoryAction::UseInput  => use_input = true,
+                                HistoryAction::Rerun => rerun = true,
+                                HistoryAction::UseInput => use_input = true,
                                 HistoryAction::UseOutput => use_output = true,
                             });
                             ui.add_space(5.0);
@@ -467,10 +511,14 @@ impl App {
                 let selected = self.panel_tab == tab;
                 let fill = if selected { C_OP } else { C_FN };
                 let tc = if selected { C_RES } else { C_EXPR };
-                if ui.add(
-                    egui::Button::new(RichText::new(label).size(11.0).color(tc).strong())
-                        .fill(fill).min_size(Vec2::new(0.0, 24.0)),
-                ).clicked() {
+                if ui
+                    .add(
+                        egui::Button::new(RichText::new(label).size(11.0).color(tc).strong())
+                            .fill(fill)
+                            .min_size(Vec2::new(0.0, 24.0)),
+                    )
+                    .clicked()
+                {
                     self.panel_tab = tab;
                 }
             }
@@ -485,8 +533,8 @@ impl App {
 
         match self.panel_tab {
             PanelTab::Workspace => self.workspace_tab(ui),
-            PanelTab::Script    => self.script_tab(ui),
-            PanelTab::Palette   => self.palette_tab(ui),
+            PanelTab::Script => self.script_tab(ui),
+            PanelTab::Palette => self.palette_tab(ui),
         }
     }
 
@@ -496,7 +544,11 @@ impl App {
             ui.add_space(8.0);
             ui.vertical(|ui| {
                 ui.label(RichText::new("Workspace").size(18.0).strong());
-                ui.label(RichText::new("variables, functions, session").size(11.0).color(C_EXPR));
+                ui.label(
+                    RichText::new("variables, functions, session")
+                        .size(11.0)
+                        .color(C_EXPR),
+                );
             });
         });
         ui.add_space(10.0);
@@ -514,11 +566,17 @@ impl App {
         ui.add_space(10.0);
         ui.horizontal(|ui| {
             ui.add_space(8.0);
-            if action_button(ui, "Reset").on_hover_text("Clear variables and functions").clicked() {
+            if action_button(ui, "Reset")
+                .on_hover_text("Clear variables and functions")
+                .clicked()
+            {
                 self.dispatch("reset");
             }
             ui.add_space(4.0);
-            if action_button(ui, "Clear log").on_hover_text("Clear calculation history").clicked() {
+            if action_button(ui, "Clear log")
+                .on_hover_text("Clear calculation history")
+                .clicked()
+            {
                 self.history.clear();
                 self.status = String::from("History cleared");
             }
@@ -585,7 +643,9 @@ impl App {
             ui.vertical(|ui| {
                 ui.label(RichText::new("Rhai Script").size(18.0).strong());
                 ui.label(
-                    RichText::new("run programmatic expressions").size(11.0).color(C_EXPR),
+                    RichText::new("run programmatic expressions")
+                        .size(11.0)
+                        .color(C_EXPR),
                 );
             });
         });
@@ -604,7 +664,9 @@ impl App {
         ui.add_space(6.0);
         ui.horizontal(|ui| {
             ui.add_space(8.0);
-            if primary_button(ui, "Run Script").clicked() { self.run_script(); }
+            if primary_button(ui, "Run Script").clicked() {
+                self.run_script();
+            }
             ui.add_space(4.0);
             if action_button(ui, "Example").clicked() {
                 self.script_input = String::from(
@@ -612,14 +674,17 @@ impl App {
                 );
             }
             ui.add_space(4.0);
-            if action_button(ui, "Clear").clicked() { self.script_input.clear(); }
+            if action_button(ui, "Clear").clicked() {
+                self.script_input.clear();
+            }
         });
         ui.add_space(4.0);
         ui.horizontal(|ui| {
             ui.add_space(8.0);
             ui.label(
                 RichText::new("Available: calc(text), simplify(text), value(text)")
-                    .size(10.0).color(C_EXPR),
+                    .size(10.0)
+                    .color(C_EXPR),
             );
         });
 
@@ -676,18 +741,51 @@ impl App {
 
     fn unified_keypad(&mut self, ui: &mut egui::Ui) {
         const FN_ROWS: &[[(&str, &str); 5]] = &[
-            [("diff(",  "diff("),  ("∫",      "integrate("), ("solve(", "solve("), ("taylor(","taylor("), ("n!", "!")],
-            [("sin(",   "sin("),   ("cos(",   "cos("),       ("tan(",   "tan("),   ("ln(",    "ln("),     ("√",  "sqrt(")],
-            [("asin(",  "asin("),  ("acos(",  "acos("),      ("atan(",  "atan("),  ("log(",   "log("),    ("^",  "^")],
-            [("π",      "pi"),     ("e",      "e"),          ("x",      "x"),      ("ans",    "ans"),     ("(",  "(")],
+            [
+                ("diff(", "diff("),
+                ("∫", "integrate("),
+                ("solve(", "solve("),
+                ("taylor(", "taylor("),
+                ("n!", "!"),
+            ],
+            [
+                ("sin(", "sin("),
+                ("cos(", "cos("),
+                ("tan(", "tan("),
+                ("ln(", "ln("),
+                ("√", "sqrt("),
+            ],
+            [
+                ("asin(", "asin("),
+                ("acos(", "acos("),
+                ("atan(", "atan("),
+                ("log(", "log("),
+                ("^", "^"),
+            ],
+            [
+                ("π", "pi"),
+                ("e", "e"),
+                ("x", "x"),
+                ("ans", "ans"),
+                ("(", "("),
+            ],
         ];
         const NUM_ROWS: &[[(&str, u8, &str); 4]] = &[
-            [("AC", 2, "clear"), ("+/-", 2, "negate"), ("%", 2, "%"), ("÷", 1, "/")],
-            [("7",  0, "7"),     ("8",   0, "8"),      ("9", 0, "9"), ("×", 1, "*")],
-            [("4",  0, "4"),     ("5",   0, "5"),      ("6", 0, "6"), ("−", 1, "-")],
-            [("1",  0, "1"),     ("2",   0, "2"),      ("3", 0, "3"), ("+", 1, "+")],
+            [
+                ("AC", 2, "clear"),
+                ("+/-", 2, "negate"),
+                ("%", 2, "%"),
+                ("÷", 1, "/"),
+            ],
+            [("7", 0, "7"), ("8", 0, "8"), ("9", 0, "9"), ("×", 1, "*")],
+            [("4", 0, "4"), ("5", 0, "5"), ("6", 0, "6"), ("−", 1, "-")],
+            [("1", 0, "1"), ("2", 0, "2"), ("3", 0, "3"), ("+", 1, "+")],
         ];
-        let num_color = |c: u8| match c { 1 => C_OP, 2 => C_SPEC, _ => C_NUM };
+        let num_color = |c: u8| match c {
+            1 => C_OP,
+            2 => C_SPEC,
+            _ => C_NUM,
+        };
 
         // kill default item_spacing — we control every gap explicitly with add_space
         ui.spacing_mut().item_spacing = Vec2::ZERO;
@@ -697,7 +795,7 @@ impl App {
         let h = 56.0;
         // 9 button columns total + 8 inter-button gaps + 2 outer pad + 1 column-separator gap
         let total = ui.available_width() - 2.0 * pad - 8.0 * gap - gap;
-        let fn_w  = (total * 5.0 / 9.0 / 5.0).floor();
+        let fn_w = (total * 5.0 / 9.0 / 5.0).floor();
         let num_w = (total * 4.0 / 9.0 / 4.0).floor();
 
         let mut action: Option<&str> = None;
@@ -713,7 +811,9 @@ impl App {
                             if calc_btn(ui, label, C_FN, Vec2::new(fn_w, h)).clicked() {
                                 action = Some(*ins);
                             }
-                            if i < 4 { ui.add_space(gap); }
+                            if i < 4 {
+                                ui.add_space(gap);
+                            }
                         }
                     });
                     ui.add_space(gap);
@@ -730,17 +830,25 @@ impl App {
                             if calc_btn(ui, label, num_color(*c), Vec2::new(num_w, h)).clicked() {
                                 action = Some(*act);
                             }
-                            if i < 3 { ui.add_space(gap); }
+                            if i < 3 {
+                                ui.add_space(gap);
+                            }
                         }
                     });
                     ui.add_space(gap);
                 }
                 ui.horizontal(|ui| {
-                    if calc_btn(ui, "0", C_NUM, Vec2::new(num_w * 2.0 + gap, h)).clicked() { action = Some("0"); }
+                    if calc_btn(ui, "0", C_NUM, Vec2::new(num_w * 2.0 + gap, h)).clicked() {
+                        action = Some("0");
+                    }
                     ui.add_space(gap);
-                    if calc_btn(ui, ".", C_NUM, Vec2::new(num_w, h)).clicked() { action = Some("."); }
+                    if calc_btn(ui, ".", C_NUM, Vec2::new(num_w, h)).clicked() {
+                        action = Some(".");
+                    }
                     ui.add_space(gap);
-                    if calc_btn(ui, "=", C_OP,  Vec2::new(num_w, h)).clicked() { action = Some("eval"); }
+                    if calc_btn(ui, "=", C_OP, Vec2::new(num_w, h)).clicked() {
+                        action = Some("eval");
+                    }
                 });
             });
 
@@ -748,7 +856,9 @@ impl App {
         });
         ui.add_space(pad);
 
-        if let Some(a) = action { self.dispatch(a); }
+        if let Some(a) = action {
+            self.dispatch(a);
+        }
     }
 }
 
@@ -762,38 +872,58 @@ impl eframe::App for App {
 // History widgets
 // ---------------------------------------------------------------
 
-enum HistoryAction { Rerun, UseInput, UseOutput }
+enum HistoryAction {
+    Rerun,
+    UseInput,
+    UseOutput,
+}
 
-fn history_card(
-    ui: &mut egui::Ui,
-    entry: &HistoryEntry,
-    mut on_action: impl FnMut(HistoryAction),
-) {
+fn history_card(ui: &mut egui::Ui, entry: &HistoryEntry, mut on_action: impl FnMut(HistoryAction)) {
     egui::Frame::group(ui.style())
         .inner_margin(egui::Margin::same(9_i8))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     let kind_color = match entry.kind {
-                        EntryKind::Error    => Color32::from_rgb(220, 80, 60),
+                        EntryKind::Error => Color32::from_rgb(220, 80, 60),
                         EntryKind::Function => Color32::from_rgb(120, 170, 255),
-                        EntryKind::Script   => Color32::from_rgb(180, 140, 255),
-                        _                   => C_EXPR,
+                        EntryKind::Script => Color32::from_rgb(180, 140, 255),
+                        _ => C_EXPR,
                     };
-                    ui.label(RichText::new(entry_kind_label(entry.kind)).size(10.0).color(kind_color));
+                    ui.label(
+                        RichText::new(entry_kind_label(entry.kind))
+                            .size(10.0)
+                            .color(kind_color),
+                    );
                     ui.label(RichText::new(&entry.input).monospace().size(12.0));
                     ui.add_space(2.0);
                     let out_size: f32 = if entry.output.len() <= 20 { 16.0 } else { 12.0 };
-                    ui.label(RichText::new(&entry.output).monospace().size(out_size).strong());
+                    ui.label(
+                        RichText::new(&entry.output)
+                            .monospace()
+                            .size(out_size)
+                            .strong(),
+                    );
                     if !entry.detail.is_empty() && entry.detail != entry.output {
-                        ui.label(RichText::new(&entry.detail).monospace().size(10.0).color(C_EXPR));
+                        ui.label(
+                            RichText::new(&entry.detail)
+                                .monospace()
+                                .size(10.0)
+                                .color(C_EXPR),
+                        );
                     }
                 });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
-                    if small_button(ui, "run").clicked()    { on_action(HistoryAction::Rerun); }
-                    if small_button(ui, "use").clicked()    { on_action(HistoryAction::UseInput); }
+                    if small_button(ui, "run").clicked() {
+                        on_action(HistoryAction::Rerun);
+                    }
+                    if small_button(ui, "use").clicked() {
+                        on_action(HistoryAction::UseInput);
+                    }
                     if entry.kind != EntryKind::Error {
-                        if small_button(ui, "result").clicked() { on_action(HistoryAction::UseOutput); }
+                        if small_button(ui, "result").clicked() {
+                            on_action(HistoryAction::UseOutput);
+                        }
                     }
                 });
             });
@@ -802,11 +932,11 @@ fn history_card(
 
 fn entry_kind_label(kind: EntryKind) -> &'static str {
     match kind {
-        EntryKind::Eval       => "expression",
+        EntryKind::Eval => "expression",
         EntryKind::Assignment => "assignment",
-        EntryKind::Function   => "function",
-        EntryKind::Script     => "script",
-        EntryKind::Error      => "error",
+        EntryKind::Function => "function",
+        EntryKind::Script => "script",
+        EntryKind::Error => "error",
     }
 }
 
@@ -814,11 +944,16 @@ fn welcome(ui: &mut egui::Ui, input: &mut String) {
     egui::Frame::group(ui.style())
         .inner_margin(egui::Margin::same(12_i8))
         .show(ui, |ui| {
-            ui.label(RichText::new("Start with a calculation").size(16.0).strong());
+            ui.label(
+                RichText::new("Start with a calculation")
+                    .size(16.0)
+                    .strong(),
+            );
             ui.add_space(4.0);
             ui.label(
                 RichText::new("Symbolic calculus, exact rationals, variables, functions.")
-                    .size(11.0).color(C_EXPR),
+                    .size(11.0)
+                    .color(C_EXPR),
             );
             ui.add_space(10.0);
             ui.horizontal_wrapped(|ui| {
@@ -837,7 +972,11 @@ fn welcome(ui: &mut egui::Ui, input: &mut String) {
 // ---------------------------------------------------------------
 
 fn calc_btn(ui: &mut egui::Ui, label: &str, fill: Color32, size: Vec2) -> egui::Response {
-    let tc = if fill == C_SPEC { Color32::from_rgb(20, 14, 12) } else { C_RES };
+    let tc = if fill == C_SPEC {
+        Color32::from_rgb(20, 14, 12)
+    } else {
+        C_RES
+    };
     ui.add(
         egui::Button::new(RichText::new(label).size(17.0).color(tc).strong())
             .fill(fill)
@@ -851,7 +990,12 @@ fn stat_badge(ui: &mut egui::Ui, label: &str, value: usize) {
         .inner_margin(egui::Margin::symmetric(8_i8, 4_i8))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new(format!("{value}")).monospace().size(14.0).strong());
+                ui.label(
+                    RichText::new(format!("{value}"))
+                        .monospace()
+                        .size(14.0)
+                        .strong(),
+                );
                 ui.add_space(3.0);
                 ui.label(RichText::new(label).size(11.0).color(C_EXPR));
             });
@@ -870,7 +1014,9 @@ fn variable_row(ui: &mut egui::Ui, name: &str, value: &str, input: &mut String) 
                     ui.label(RichText::new(value).monospace().size(10.0).color(C_EXPR));
                 });
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if small_button(ui, "insert").clicked() { input.push_str(name); }
+                    if small_button(ui, "insert").clicked() {
+                        input.push_str(name);
+                    }
                 });
             });
         });
@@ -883,7 +1029,8 @@ fn empty_state(ui: &mut egui::Ui, text: &str) {
 fn example_button(ui: &mut egui::Ui, example: &Example) -> egui::Response {
     ui.add(egui::Button::new(
         RichText::new(format!("{}  {}", example.title, example.expression))
-            .monospace().size(11.0),
+            .monospace()
+            .size(11.0),
     ))
 }
 
@@ -896,9 +1043,7 @@ fn palette_button(ui: &mut egui::Ui, item: &PaletteItem) -> egui::Response {
 }
 
 fn action_button(ui: &mut egui::Ui, text: &str) -> egui::Response {
-    ui.add(egui::Button::new(
-        RichText::new(text).size(12.0).strong().color(C_RES),
-    ).fill(C_FN))
+    ui.add(egui::Button::new(RichText::new(text).size(12.0).strong().color(C_RES)).fill(C_FN))
 }
 
 fn primary_button(ui: &mut egui::Ui, text: &str) -> egui::Response {
@@ -910,7 +1055,9 @@ fn primary_button(ui: &mut egui::Ui, text: &str) -> egui::Response {
 }
 
 fn small_button(ui: &mut egui::Ui, text: &str) -> egui::Response {
-    ui.add(egui::Button::new(RichText::new(text).size(10.0).color(C_EXPR)))
+    ui.add(egui::Button::new(
+        RichText::new(text).size(10.0).color(C_EXPR),
+    ))
 }
 
 fn format_number(value: f64) -> String {
@@ -928,98 +1075,285 @@ fn format_number(value: f64) -> String {
 // Static data
 // ---------------------------------------------------------------
 
-struct Example    { title: &'static str, expression: &'static str }
-struct PaletteGroup { title: &'static str, items: &'static [PaletteItem] }
-struct PaletteItem  { label: &'static str, insert: &'static str, hint: &'static str }
+struct Example {
+    title: &'static str,
+    expression: &'static str,
+}
+struct PaletteGroup {
+    title: &'static str,
+    items: &'static [PaletteItem],
+}
+struct PaletteItem {
+    label: &'static str,
+    insert: &'static str,
+    hint: &'static str,
+}
 
 const EXAMPLES: &[Example] = &[
-    Example { title: "Derivative", expression: "diff(exp(x^2) * sin(x), x)" },
-    Example { title: "Simplify",   expression: "simplify(sin(x)^2 + cos(x)^2)" },
-    Example { title: "Solve",      expression: "solve(x^2 == 9, x)" },
-    Example { title: "Taylor",     expression: "taylor(exp(x), x, 0, 5)" },
-    Example { title: "Matrix",     expression: "det([[1,2],[3,4]])" },
-    Example { title: "Define",     expression: "def f(x) = x^2 + 2x + 1" },
-    Example { title: "Assign",     expression: "a = 100 / 7 + 3/14" },
+    Example {
+        title: "Derivative",
+        expression: "diff(exp(x^2) * sin(x), x)",
+    },
+    Example {
+        title: "Simplify",
+        expression: "simplify(sin(x)^2 + cos(x)^2)",
+    },
+    Example {
+        title: "Solve",
+        expression: "solve(x^2 == 9, x)",
+    },
+    Example {
+        title: "Taylor",
+        expression: "taylor(exp(x), x, 0, 5)",
+    },
+    Example {
+        title: "Matrix",
+        expression: "det([[1,2],[3,4]])",
+    },
+    Example {
+        title: "Define",
+        expression: "def f(x) = x^2 + 2x + 1",
+    },
+    Example {
+        title: "Assign",
+        expression: "a = 100 / 7 + 3/14",
+    },
 ];
 
 const PALETTE: &[PaletteGroup] = &[
     PaletteGroup {
         title: "Constants",
         items: &[
-            PaletteItem { label: "pi",  insert: "pi",  hint: "3.14159…" },
-            PaletteItem { label: "e",   insert: "e",   hint: "Euler constant" },
-            PaletteItem { label: "i",   insert: "i",   hint: "imaginary unit" },
-            PaletteItem { label: "inf", insert: "inf", hint: "infinity" },
+            PaletteItem {
+                label: "pi",
+                insert: "pi",
+                hint: "3.14159…",
+            },
+            PaletteItem {
+                label: "e",
+                insert: "e",
+                hint: "Euler constant",
+            },
+            PaletteItem {
+                label: "i",
+                insert: "i",
+                hint: "imaginary unit",
+            },
+            PaletteItem {
+                label: "inf",
+                insert: "inf",
+                hint: "infinity",
+            },
         ],
     },
     PaletteGroup {
         title: "Trig",
         items: &[
-            PaletteItem { label: "sin",  insert: "sin(",  hint: "sine" },
-            PaletteItem { label: "cos",  insert: "cos(",  hint: "cosine" },
-            PaletteItem { label: "tan",  insert: "tan(",  hint: "tangent" },
-            PaletteItem { label: "asin", insert: "asin(", hint: "inverse sine" },
-            PaletteItem { label: "acos", insert: "acos(", hint: "inverse cosine" },
-            PaletteItem { label: "atan", insert: "atan(", hint: "inverse tangent" },
+            PaletteItem {
+                label: "sin",
+                insert: "sin(",
+                hint: "sine",
+            },
+            PaletteItem {
+                label: "cos",
+                insert: "cos(",
+                hint: "cosine",
+            },
+            PaletteItem {
+                label: "tan",
+                insert: "tan(",
+                hint: "tangent",
+            },
+            PaletteItem {
+                label: "asin",
+                insert: "asin(",
+                hint: "inverse sine",
+            },
+            PaletteItem {
+                label: "acos",
+                insert: "acos(",
+                hint: "inverse cosine",
+            },
+            PaletteItem {
+                label: "atan",
+                insert: "atan(",
+                hint: "inverse tangent",
+            },
         ],
     },
     PaletteGroup {
         title: "Algebra",
         items: &[
-            PaletteItem { label: "simplify",  insert: "simplify(",  hint: "simplify expression" },
-            PaletteItem { label: "expand",    insert: "expand(",    hint: "expand expression" },
-            PaletteItem { label: "solve",     insert: "solve(",     hint: "solve equation" },
-            PaletteItem { label: "factorial", insert: "factorial(", hint: "factorial" },
+            PaletteItem {
+                label: "simplify",
+                insert: "simplify(",
+                hint: "simplify expression",
+            },
+            PaletteItem {
+                label: "expand",
+                insert: "expand(",
+                hint: "expand expression",
+            },
+            PaletteItem {
+                label: "solve",
+                insert: "solve(",
+                hint: "solve equation",
+            },
+            PaletteItem {
+                label: "factorial",
+                insert: "factorial(",
+                hint: "factorial",
+            },
         ],
     },
     PaletteGroup {
         title: "Calculus",
         items: &[
-            PaletteItem { label: "diff",      insert: "diff(",      hint: "symbolic derivative" },
-            PaletteItem { label: "integrate", insert: "integrate(", hint: "symbolic antiderivative" },
-            PaletteItem { label: "integral",  insert: "integral(",  hint: "definite integral" },
-            PaletteItem { label: "taylor",    insert: "taylor(",    hint: "Taylor series" },
-            PaletteItem { label: "ndiff",     insert: "ndiff(",     hint: "numeric derivative" },
+            PaletteItem {
+                label: "diff",
+                insert: "diff(",
+                hint: "symbolic derivative",
+            },
+            PaletteItem {
+                label: "integrate",
+                insert: "integrate(",
+                hint: "symbolic antiderivative",
+            },
+            PaletteItem {
+                label: "integral",
+                insert: "integral(",
+                hint: "definite integral",
+            },
+            PaletteItem {
+                label: "taylor",
+                insert: "taylor(",
+                hint: "Taylor series",
+            },
+            PaletteItem {
+                label: "ndiff",
+                insert: "ndiff(",
+                hint: "numeric derivative",
+            },
         ],
     },
     PaletteGroup {
         title: "Log / Roots",
         items: &[
-            PaletteItem { label: "exp",  insert: "exp(",  hint: "exponential e^x" },
-            PaletteItem { label: "ln",   insert: "ln(",   hint: "natural logarithm" },
-            PaletteItem { label: "log",  insert: "log(",  hint: "log(base, value)" },
-            PaletteItem { label: "sqrt", insert: "sqrt(", hint: "square root" },
-            PaletteItem { label: "cbrt", insert: "cbrt(", hint: "cube root" },
+            PaletteItem {
+                label: "exp",
+                insert: "exp(",
+                hint: "exponential e^x",
+            },
+            PaletteItem {
+                label: "ln",
+                insert: "ln(",
+                hint: "natural logarithm",
+            },
+            PaletteItem {
+                label: "log",
+                insert: "log(",
+                hint: "log(base, value)",
+            },
+            PaletteItem {
+                label: "sqrt",
+                insert: "sqrt(",
+                hint: "square root",
+            },
+            PaletteItem {
+                label: "cbrt",
+                insert: "cbrt(",
+                hint: "cube root",
+            },
         ],
     },
     PaletteGroup {
         title: "Number Theory",
         items: &[
-            PaletteItem { label: "gcd",     insert: "gcd(",     hint: "greatest common divisor" },
-            PaletteItem { label: "lcm",     insert: "lcm(",     hint: "least common multiple" },
-            PaletteItem { label: "mod",     insert: "mod(",     hint: "modulo" },
-            PaletteItem { label: "isprime", insert: "isprime(", hint: "primality check" },
+            PaletteItem {
+                label: "gcd",
+                insert: "gcd(",
+                hint: "greatest common divisor",
+            },
+            PaletteItem {
+                label: "lcm",
+                insert: "lcm(",
+                hint: "least common multiple",
+            },
+            PaletteItem {
+                label: "mod",
+                insert: "mod(",
+                hint: "modulo",
+            },
+            PaletteItem {
+                label: "isprime",
+                insert: "isprime(",
+                hint: "primality check",
+            },
         ],
     },
     PaletteGroup {
         title: "Matrix / Vector",
         items: &[
-            PaletteItem { label: "det",       insert: "det(",       hint: "determinant" },
-            PaletteItem { label: "tr",        insert: "tr(",        hint: "matrix trace" },
-            PaletteItem { label: "transpose", insert: "transpose(", hint: "matrix transpose" },
-            PaletteItem { label: "zeros",     insert: "zeros(",     hint: "zero matrix" },
-            PaletteItem { label: "eye",       insert: "eye(",       hint: "identity matrix" },
-            PaletteItem { label: "dot",       insert: "dot(",       hint: "dot product" },
-            PaletteItem { label: "norm",      insert: "norm(",      hint: "vector norm" },
+            PaletteItem {
+                label: "det",
+                insert: "det(",
+                hint: "determinant",
+            },
+            PaletteItem {
+                label: "tr",
+                insert: "tr(",
+                hint: "matrix trace",
+            },
+            PaletteItem {
+                label: "transpose",
+                insert: "transpose(",
+                hint: "matrix transpose",
+            },
+            PaletteItem {
+                label: "zeros",
+                insert: "zeros(",
+                hint: "zero matrix",
+            },
+            PaletteItem {
+                label: "eye",
+                insert: "eye(",
+                hint: "identity matrix",
+            },
+            PaletteItem {
+                label: "dot",
+                insert: "dot(",
+                hint: "dot product",
+            },
+            PaletteItem {
+                label: "norm",
+                insert: "norm(",
+                hint: "vector norm",
+            },
         ],
     },
     PaletteGroup {
         title: "Sequences",
         items: &[
-            PaletteItem { label: "sum",     insert: "sum(",     hint: "summation" },
-            PaletteItem { label: "product", insert: "product(", hint: "product" },
-            PaletteItem { label: "range",   insert: "range(",   hint: "range list" },
-            PaletteItem { label: "len",     insert: "len(",     hint: "length" },
+            PaletteItem {
+                label: "sum",
+                insert: "sum(",
+                hint: "summation",
+            },
+            PaletteItem {
+                label: "product",
+                insert: "product(",
+                hint: "product",
+            },
+            PaletteItem {
+                label: "range",
+                insert: "range(",
+                hint: "range list",
+            },
+            PaletteItem {
+                label: "len",
+                insert: "len(",
+                hint: "length",
+            },
         ],
     },
 ];

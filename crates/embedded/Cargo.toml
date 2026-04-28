@@ -1,18 +1,38 @@
+[workspace]
+
 [package]
 name = "embedded"
 version = "0.1.0"
 edition = "2024"
 
-[features]
-default = []
-qemu-selftest = ["calc-core/scripting-no-std"]
+[profile.release-embedded]
+inherits = "release"
+opt-level = "z"
+panic = "abort"
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+overflow-checks = false
+debug = false
+
 
 [dependencies]
-calc-core         = { path = "../core", package = "core" }
-embedded-alloc    = "0.6"
-cortex-m-rt       = "0.7"
-cortex-m-semihosting = "0.5"
-critical-section  = "1"
-
-[dev-dependencies]
-calc-core = { path = "../core", package = "core", features = ["scripting-std"] }
+# calc-core = { path = "../core", package = "core" }
+embassy-executor = { version = "0.9", features = [
+  "arch-cortex-m",
+  "executor-thread",
+  "defmt",
+] }
+panic-probe = { version = "1.0", features = ["print-defmt"] }
+embassy-time = { version = "0.5.0" }
+embassy-rp = { version = "0.9.0", features = [
+  "defmt",
+  "time-driver",
+  "critical-section-impl",
+  "rp235xa",
+  "binary-info",
+] }
+cortex-m = { version = "0.7.6" }
+cortex-m-rt = "0.7.5"
+defmt = "1.0.1"
+defmt-rtt = "1.0"

@@ -8,7 +8,6 @@ mod parse;
 mod runtime;
 #[cfg(feature = "scripting")]
 pub mod scripting;
-pub mod selftest;
 #[doc(hidden)]
 pub mod tests;
 mod types;
@@ -34,9 +33,9 @@ pub use types::rational;
 pub use diff::diff;
 pub use env::{Env, UserFn};
 pub use error::CalcError;
-pub use eval::{eval, eval_env, Context};
+pub use eval::{Context, eval, eval_env};
 pub use expr::Expr;
-pub use parser::{parse, parse_statement, Statement};
+pub use parser::{Statement, parse, parse_statement};
 #[cfg(feature = "scripting")]
 pub use scripting::{CompiledScript, ScriptRuntime, ScriptScope};
 pub use simplify::{simplify, simplify_with_env};
