@@ -17,9 +17,6 @@ fn main() -> eframe::Result {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum CalcMode { Basic, Scientific, Cas }
-
-#[derive(Clone, Copy, PartialEq, Eq)]
 enum PanelTab { Workspace, Script, Palette }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -42,7 +39,6 @@ struct App {
     script_input: String,
     status: String,
     last_answer: Option<String>,
-    mode: CalcMode,
     show_history: bool,
     show_panel: bool,
     panel_tab: PanelTab,
@@ -75,7 +71,6 @@ impl App {
             ),
             status: String::from("Ready"),
             last_answer: None,
-            mode: CalcMode::Basic,
             show_history: false,
             show_panel: true,
             panel_tab: PanelTab::Workspace,
@@ -287,9 +282,14 @@ impl App {
                 });
         }
 
-        egui::Panel::bottom("cmd_bar")
+        egui::Panel::bottom("status_bar")
             .resizable(false)
-            .show_inside(ui, |ui| self.command_bar(ui));
+            .frame(egui::Frame::NONE.inner_margin(egui::Margin {
+                left: 10, right: 10, top: 6, bottom: 6,
+            }))
+            .show_inside(ui, |ui| {
+                ui.label(RichText::new(&self.status).size(11.0).color(C_EXPR));
+            });
 
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE.inner_margin(egui::Margin {
@@ -305,18 +305,13 @@ impl App {
     fn calc_area(&mut self, ui: &mut egui::Ui) {
         self.mode_bar(ui);
 
-        // dock keypad (+ optional sci/cas row) at bottom — never pushed off
+        // dock keypad at bottom — never pushed off
         egui::Panel::bottom("keypad_dock")
             .resizable(false)
             .frame(egui::Frame::NONE)
             .show_inside(ui, |ui| {
                 ui.add_space(6.0);
-                match self.mode {
-                    CalcMode::Scientific => self.sci_buttons(ui),
-                    CalcMode::Cas        => self.cas_buttons(ui),
-                    CalcMode::Basic      => {}
-                }
-                self.main_keypad(ui);
+                self.unified_keypad(ui);
             });
 
         // dock display just above keypad
@@ -360,30 +355,13 @@ impl App {
                 ).clicked() {
                     self.show_history = !self.show_history;
                 }
-
-                ui.add_space(4.0);
-
-                for (label, m) in [
-                    ("CAS", CalcMode::Cas),
-                    ("Sci", CalcMode::Scientific),
-                    ("Basic", CalcMode::Basic),
-                ] {
-                    let selected = self.mode == m;
-                    let fill = if selected { C_OP } else { C_FN };
-                    let tc = if selected { C_RES } else { C_EXPR };
-                    if ui.add(
-                        egui::Button::new(RichText::new(label).size(11.0).color(tc).strong())
-                            .fill(fill).min_size(Vec2::new(44.0, 26.0)),
-                    ).clicked() {
-                        self.mode = m;
-                    }
-                }
             });
         });
         ui.add_space(6.0);
     }
 
-    fn display_panel(&self, ui: &mut egui::Ui) {
+    fn display_panel(&mut self, ui: &mut egui::Ui) {
+        let mut do_eval = false;
         egui::Frame::default()
             .fill(C_DISP)
             .inner_margin(egui::Margin::symmetric(16_i8, 14_i8))
@@ -395,8 +373,26 @@ impl App {
                 let expr_size: f32 = if self.input.len() <= 28 { 17.0 }
                     else if self.input.len() <= 45 { 13.0 }
                     else { 10.5 };
+
+                let v = &mut ui.style_mut().visuals;
+                v.extreme_bg_color = Color32::TRANSPARENT;
+                v.widgets.inactive.bg_stroke = egui::Stroke::NONE;
+                v.widgets.hovered.bg_stroke  = egui::Stroke::NONE;
+                v.widgets.active.bg_stroke   = egui::Stroke::NONE;
+                v.selection.stroke           = egui::Stroke::NONE;
+
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
-                    ui.label(RichText::new(&self.input).color(C_EXPR).size(expr_size).monospace());
+                    let resp = ui.add(
+                        egui::TextEdit::singleline(&mut self.input)
+                            .desired_width(inner_w)
+                            .horizontal_align(egui::Align::Max)
+                            .text_color(C_EXPR)
+                            .font(egui::FontId::monospace(expr_size))
+                            .hint_text("type expression…"),
+                    );
+                    if resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        do_eval = true;
+                    }
                 });
 
                 ui.add_space(6.0);
@@ -409,6 +405,7 @@ impl App {
                     ui.label(RichText::new(&self.result).color(C_RES).size(res_size).strong());
                 });
             });
+        if do_eval { self.evaluate(); }
     }
 
     fn history_strip(&mut self, ui: &mut egui::Ui) {
@@ -452,53 +449,6 @@ impl App {
                         ui.add_space(8.0);
                     });
             });
-    }
-
-    fn command_bar(&mut self, ui: &mut egui::Ui) {
-        ui.painter().rect_filled(
-            ui.max_rect(),
-            0.0,
-            Color32::from_rgb(14, 11, 10),
-        );
-        ui.add_space(8.0);
-        ui.horizontal(|ui| {
-            ui.add_space(10.0);
-            let resp = ui.add(
-                egui::TextEdit::singleline(&mut self.input)
-                    .desired_width(f32::INFINITY)
-                    .hint_text("type an expression, x = 2, or def f(x) = x^2")
-                    .font(egui::TextStyle::Monospace),
-            );
-            let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
-            if primary_button(ui, "=  Evaluate").clicked() || enter {
-                self.evaluate();
-                resp.request_focus();
-            }
-        });
-        ui.add_space(5.0);
-        ui.horizontal_wrapped(|ui| {
-            ui.add_space(10.0);
-            for key in QUICK_KEYS {
-                if compact_key(ui, key.label).on_hover_text(key.hint).clicked() {
-                    self.insert(key.insert);
-                }
-            }
-            ui.separator();
-            if compact_key(ui, "ans").clicked() { self.insert("ans"); }
-            if compact_key(ui, "DEL").on_hover_text("backspace").clicked() {
-                self.dispatch("backspace");
-            }
-            if compact_key(ui, "clear").clicked() {
-                self.input.clear();
-                self.just_evaluated = false;
-            }
-        });
-        ui.add_space(4.0);
-        ui.horizontal(|ui| {
-            ui.add_space(10.0);
-            ui.label(RichText::new(&self.status).size(11.0).color(C_EXPR));
-        });
-        ui.add_space(6.0);
     }
 
     // ---------------------------------------------------------------
@@ -724,84 +674,77 @@ impl App {
     // Calculator buttons
     // ---------------------------------------------------------------
 
-    fn sci_buttons(&mut self, ui: &mut egui::Ui) {
-        self.fn_grid(ui, &[
-            &[("sin", "sin("), ("cos", "cos("), ("tan", "tan("), ("ln", "ln("), ("sqrt", "sqrt(")],
-            &[("asin", "asin("), ("acos", "acos("), ("atan", "atan("), ("log", "log("), ("^", "^")],
-            &[("pi", "pi"), ("e", "e"), ("(", "("), (")", ")"), ("n!", "!")],
-        ]);
-    }
-
-    fn cas_buttons(&mut self, ui: &mut egui::Ui) {
-        self.fn_grid(ui, &[
-            &[("d/dx", "diff("), ("int", "integrate("), ("solve", "solve("), ("simp", "simplify("), ("taylor", "taylor(")],
-            &[("x", "x"), ("y", "y"), ("z", "z"), ("ans", "ans"), ("DEL", "backspace")],
-            &[("sin(", "sin("), ("cos(", "cos("), ("sqrt(", "sqrt("), ("pi", "pi"), ("^", "^")],
-        ]);
-    }
-
-    fn fn_grid(&mut self, ui: &mut egui::Ui, rows: &[&[(&str, &str)]]) {
-        let avail = ui.available_width();
-        let pad = 10.0;
-        let gap = 3.0;
-        let w = ((avail - 2.0 * pad - 4.0 * gap) / 5.0).floor();
-        let h = 34.0;
-
-        let mut action: Option<&str> = None;
-        ui.add_space(2.0);
-        for row in rows {
-            ui.horizontal(|ui| {
-                ui.add_space(pad);
-                let last = row.len() - 1;
-                for (i, (label, ins)) in row.iter().enumerate() {
-                    if calc_btn(ui, label, C_FN, Vec2::new(w, h)).clicked() {
-                        action = Some(*ins);
-                    }
-                    if i < last { ui.add_space(gap); }
-                }
-            });
-            ui.add_space(gap);
-        }
-        ui.add_space(2.0);
-        if let Some(a) = action { self.dispatch(a); }
-    }
-
-    fn main_keypad(&mut self, ui: &mut egui::Ui) {
-        let avail = ui.available_width();
-        let pad = 10.0;
-        let gap = 5.0;
-        let w = ((avail - 2.0 * pad - 3.0 * gap) / 4.0).floor();
-        let h = 60.0;
-
-        const ROWS: &[[(&str, u8, &str); 4]] = &[
+    fn unified_keypad(&mut self, ui: &mut egui::Ui) {
+        const FN_ROWS: &[[(&str, &str); 5]] = &[
+            [("diff(",  "diff("),  ("∫",      "integrate("), ("solve(", "solve("), ("taylor(","taylor("), ("n!", "!")],
+            [("sin(",   "sin("),   ("cos(",   "cos("),       ("tan(",   "tan("),   ("ln(",    "ln("),     ("√",  "sqrt(")],
+            [("asin(",  "asin("),  ("acos(",  "acos("),      ("atan(",  "atan("),  ("log(",   "log("),    ("^",  "^")],
+            [("π",      "pi"),     ("e",      "e"),          ("x",      "x"),      ("ans",    "ans"),     ("(",  "(")],
+        ];
+        const NUM_ROWS: &[[(&str, u8, &str); 4]] = &[
             [("AC", 2, "clear"), ("+/-", 2, "negate"), ("%", 2, "%"), ("÷", 1, "/")],
             [("7",  0, "7"),     ("8",   0, "8"),      ("9", 0, "9"), ("×", 1, "*")],
             [("4",  0, "4"),     ("5",   0, "5"),      ("6", 0, "6"), ("−", 1, "-")],
             [("1",  0, "1"),     ("2",   0, "2"),      ("3", 0, "3"), ("+", 1, "+")],
         ];
-        let color = |c: u8| match c { 1 => C_OP, 2 => C_SPEC, _ => C_NUM };
+        let num_color = |c: u8| match c { 1 => C_OP, 2 => C_SPEC, _ => C_NUM };
+
+        // kill default item_spacing — we control every gap explicitly with add_space
+        ui.spacing_mut().item_spacing = Vec2::ZERO;
+
+        let pad = 10.0;
+        let gap = 5.0;
+        let h = 56.0;
+        // 9 button columns total + 8 inter-button gaps + 2 outer pad + 1 column-separator gap
+        let total = ui.available_width() - 2.0 * pad - 8.0 * gap - gap;
+        let fn_w  = (total * 5.0 / 9.0 / 5.0).floor();
+        let num_w = (total * 4.0 / 9.0 / 4.0).floor();
 
         let mut action: Option<&str> = None;
-        for row in ROWS {
-            ui.horizontal(|ui| {
-                ui.add_space(pad);
-                for (i, (label, c, act)) in row.iter().enumerate() {
-                    if calc_btn(ui, label, color(*c), Vec2::new(w, h)).clicked() {
-                        action = Some(*act);
-                    }
-                    if i < 3 { ui.add_space(gap); }
-                }
-            });
-            ui.add_space(gap);
-        }
 
         ui.horizontal(|ui| {
             ui.add_space(pad);
-            if calc_btn(ui, "0", C_NUM, Vec2::new(w * 2.0 + gap, h)).clicked() { action = Some("0"); }
+
+            // ── left: function grid 5×4 ──
+            ui.vertical(|ui| {
+                for row in FN_ROWS {
+                    ui.horizontal(|ui| {
+                        for (i, (label, ins)) in row.iter().enumerate() {
+                            if calc_btn(ui, label, C_FN, Vec2::new(fn_w, h)).clicked() {
+                                action = Some(*ins);
+                            }
+                            if i < 4 { ui.add_space(gap); }
+                        }
+                    });
+                    ui.add_space(gap);
+                }
+            });
+
             ui.add_space(gap);
-            if calc_btn(ui, ".", C_NUM, Vec2::new(w, h)).clicked() { action = Some("."); }
-            ui.add_space(gap);
-            if calc_btn(ui, "=", C_OP,  Vec2::new(w, h)).clicked() { action = Some("eval"); }
+
+            // ── right: number pad 4×4 + 0/./= row ──
+            ui.vertical(|ui| {
+                for row in NUM_ROWS {
+                    ui.horizontal(|ui| {
+                        for (i, (label, c, act)) in row.iter().enumerate() {
+                            if calc_btn(ui, label, num_color(*c), Vec2::new(num_w, h)).clicked() {
+                                action = Some(*act);
+                            }
+                            if i < 3 { ui.add_space(gap); }
+                        }
+                    });
+                    ui.add_space(gap);
+                }
+                ui.horizontal(|ui| {
+                    if calc_btn(ui, "0", C_NUM, Vec2::new(num_w * 2.0 + gap, h)).clicked() { action = Some("0"); }
+                    ui.add_space(gap);
+                    if calc_btn(ui, ".", C_NUM, Vec2::new(num_w, h)).clicked() { action = Some("."); }
+                    ui.add_space(gap);
+                    if calc_btn(ui, "=", C_OP,  Vec2::new(num_w, h)).clicked() { action = Some("eval"); }
+                });
+            });
+
+            ui.add_space(pad);
         });
         ui.add_space(pad);
 
@@ -970,14 +913,6 @@ fn small_button(ui: &mut egui::Ui, text: &str) -> egui::Response {
     ui.add(egui::Button::new(RichText::new(text).size(10.0).color(C_EXPR)))
 }
 
-fn compact_key(ui: &mut egui::Ui, text: &str) -> egui::Response {
-    ui.add(
-        egui::Button::new(RichText::new(text).monospace().size(11.0))
-            .fill(C_FN)
-            .min_size(Vec2::new(34.0, 22.0)),
-    )
-}
-
 fn format_number(value: f64) -> String {
     if value.fract().abs() < 1e-12 && value.abs() < 9_007_199_254_740_992.0 {
         format!("{value:.0}")
@@ -993,21 +928,9 @@ fn format_number(value: f64) -> String {
 // Static data
 // ---------------------------------------------------------------
 
-struct QuickKey   { label: &'static str, insert: &'static str, hint: &'static str }
 struct Example    { title: &'static str, expression: &'static str }
 struct PaletteGroup { title: &'static str, items: &'static [PaletteItem] }
 struct PaletteItem  { label: &'static str, insert: &'static str, hint: &'static str }
-
-const QUICK_KEYS: &[QuickKey] = &[
-    QuickKey { label: "(",    insert: "(",     hint: "open parenthesis" },
-    QuickKey { label: ")",    insert: ")",     hint: "close parenthesis" },
-    QuickKey { label: "^",    insert: "^",     hint: "power / exponent" },
-    QuickKey { label: "sqrt", insert: "sqrt(", hint: "square root" },
-    QuickKey { label: "pi",   insert: "pi",    hint: "constant pi (3.14159…)" },
-    QuickKey { label: "x",    insert: "x",     hint: "variable x" },
-    QuickKey { label: "diff", insert: "diff(", hint: "symbolic derivative" },
-    QuickKey { label: "solve",insert: "solve(",hint: "solve equation" },
-];
 
 const EXAMPLES: &[Example] = &[
     Example { title: "Derivative", expression: "diff(exp(x^2) * sin(x), x)" },
